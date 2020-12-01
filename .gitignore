@@ -31,3 +31,4 @@ hs_err_pid*
 import-songs-db.sh
 MOCK_DATA.json
 /bin/
+*song-microservice/.settings/org.eclipse.jdt.apt.core.prefs
