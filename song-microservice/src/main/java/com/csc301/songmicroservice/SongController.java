@@ -42,12 +42,12 @@ public class SongController {
 	@RequestMapping(value = "/getSongById/{songId}", method = RequestMethod.GET)
 	public @ResponseBody Map<String, Object> getSongById(@PathVariable("songId") String songId,
 			HttpServletRequest request) {
-
+	    
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("GET %s", Utils.getUrl(request)));
-
+		
 		DbQueryStatus dbQueryStatus = songDal.findSongById(songId);
-
+		
 		response.put("message", dbQueryStatus.getMessage());
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 
@@ -58,11 +58,20 @@ public class SongController {
 	@RequestMapping(value = "/getSongTitleById/{songId}", method = RequestMethod.GET)
 	public @ResponseBody Map<String, Object> getSongTitleById(@PathVariable("songId") String songId,
 			HttpServletRequest request) {
-
+	    
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("GET %s", Utils.getUrl(request)));
+		
+		try {
+		  Map<String, Object> songResponse = getSongById(songId, request);
+		  Song song = (Song) songResponse.get("data");
+		  response.put("status", "OK");
+		  response.put("data", song.getSongName());
+		} catch (Exception e) {
+		  response.put("status", "Song was not retrieved successfully.");
+		}
 
-		return null;
+		return response;
 	}
 
 	
