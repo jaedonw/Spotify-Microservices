@@ -23,6 +23,10 @@
 hs_err_pid*
 
 # Other files
-.DS_Store
+*.DS_Store
+*.classpath
+*.project
+*.org.eclipse.jdt.core.prefs
 import-songs-db.sh
 MOCK_DATA.json
+/bin/
