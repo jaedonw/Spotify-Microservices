@@ -96,14 +96,7 @@ public class SongController {
             if (songName.length() > 0 && artistName.length() > 0 && albumName.length() > 0) {
               Song song = new Song(songName, artistName, albumName);
               DbQueryStatus status = songDal.addSong(song);
-              
-              // handle successful add
-              if (status.getdbQueryExecResult().equals(DbQueryExecResult.QUERY_OK)) {
-                response.put("status", "OK");
-                response.put("data", ((Song)status.getData()).getJsonRepresentation());
-              } else { // handle unsuccessful add
-                response.put("status", status.getMessage());
-              }
+              Utils.setResponseStatus(response, status.getdbQueryExecResult(), status.getData());
             } else {
               response.put("status", "Song could not be added due to invalid parameters.");
             }
