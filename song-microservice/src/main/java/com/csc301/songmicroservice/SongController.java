@@ -82,34 +82,37 @@ public class SongController {
             HttpServletRequest request) {
         
         Map<String, Object> response = new HashMap<String, Object>();
-        response.put("path", String.format("POST %s", Utils.getUrl(request)));    
+        response.put("path", String.format("POST %s", Utils.getUrl(request)));  
         
-        // check that required parameters exist
-        if (params.containsKey("songName") && params.containsKey("songArtistFullName") 
-            && params.containsKey("songAlbum")) {
-          String songName = params.get("songName");
-          String artistName = params.get("songArtistFullName");
-          String albumName = params.get("songAlbum");
-          
-          // checking that required parameters are non-empty 
-          if (songName.length() > 0 && artistName.length() > 0 && albumName.length() > 0) {
-            Song song = new Song(songName, artistName, albumName);
-            DbQueryStatus status = songDal.addSong(song);
+        try {
+          // check that required parameters exist
+          if (params.containsKey("songName") && params.containsKey("songArtistFullName") 
+              && params.containsKey("songAlbum")) {
+            String songName = params.get("songName");
+            String artistName = params.get("songArtistFullName");
+            String albumName = params.get("songAlbum");
             
-            // handle successful add
-            if (status.getdbQueryExecResult().equals(DbQueryExecResult.QUERY_OK)) {
-              response.put("status", "OK");
-              response.put("data", ((Song)status.getData()).getJsonRepresentation());
-            } else { // handle unsuccessful add
-              response.put("status", status.getMessage());
+            // checking that required parameters are non-empty 
+            if (songName.length() > 0 && artistName.length() > 0 && albumName.length() > 0) {
+              Song song = new Song(songName, artistName, albumName);
+              DbQueryStatus status = songDal.addSong(song);
+              
+              // handle successful add
+              if (status.getdbQueryExecResult().equals(DbQueryExecResult.QUERY_OK)) {
+                response.put("status", "OK");
+                response.put("data", ((Song)status.getData()).getJsonRepresentation());
+              } else { // handle unsuccessful add
+                response.put("status", status.getMessage());
+              }
+            } else {
+              response.put("status", "Song could not be added due to invalid parameters.");
             }
           } else {
-            response.put("status", "Song could not be added due to invalid parameters.");
+            response.put("status", "Song could not be added due to missing parameters.");
           }
-        } else {
-          response.put("status", "Song could not be added due to missing parameters.");
+        } catch (Exception e) {
+          response.put("status", "Song could not be added.");
         }
-        
         return response;
     }
 
