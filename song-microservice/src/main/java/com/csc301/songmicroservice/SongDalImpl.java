@@ -1,6 +1,7 @@
 package com.csc301.songmicroservice;
 
 import java.util.HashMap;
+import java.util.Map;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,16 +23,15 @@ public class SongDalImpl implements SongDal {
 	@Override
 	public DbQueryStatus addSong(Song songToAdd) {
 	  Song returned = null;
+	  DbQueryStatus status;
 	  try {
 		returned = db.insert(songToAdd);
-		DbQueryStatus status = new DbQueryStatus("Song added successfully.", DbQueryExecResult.QUERY_OK);
-		status.setData(returned);
-		return status;
+		status = new DbQueryStatus("Song added successfully.", DbQueryExecResult.QUERY_OK);
 	  } catch (Exception e) {
-	    DbQueryStatus status = new DbQueryStatus("Song could not be added.", DbQueryExecResult.QUERY_ERROR_GENERIC);
-	    status.setData(returned);
-        return status;
+	    status = new DbQueryStatus("Song could not be added.", DbQueryExecResult.QUERY_ERROR_GENERIC);
 	  }
+	  status.setData(returned.getJsonRepresentation());
+      return status;
 	}
 
 	@Override

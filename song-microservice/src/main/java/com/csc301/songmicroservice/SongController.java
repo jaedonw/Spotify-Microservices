@@ -94,8 +94,7 @@ public class SongController {
             
             // checking that required parameters are non-empty 
             if (songName.length() > 0 && artistName.length() > 0 && albumName.length() > 0) {
-              Song song = new Song(songName, artistName, albumName);
-              DbQueryStatus status = songDal.addSong(song);
+              DbQueryStatus status = songDal.addSong(new Song(songName, artistName, albumName));
               Utils.setResponseStatus(response, status.getdbQueryExecResult(), status.getData());
             } else {
               response.put("status", "Song could not be added due to invalid parameters.");
