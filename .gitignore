@@ -27,6 +27,7 @@ hs_err_pid*
 *.classpath
 *.project
 *.org.eclipse.jdt.core.prefs
+*.org.eclipse.jdt.apt.core.prefs
 import-songs-db.sh
 MOCK_DATA.json
 /bin/
