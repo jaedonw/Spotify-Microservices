@@ -39,25 +39,26 @@ public class SongDalImpl implements SongDal {
 		Song returned = null;
 		DbQueryStatus status;
 		try {
-		  returned = db.findById(new ObjectId(songId), Song.class);
-		  if (returned != null) {
+		  returned = db.findById(new ObjectId(songId), Song.class, "songs");
+		  if (returned != null) { // status: song found
 		    status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
-		  } else {
+		    status.setData(returned.getJsonRepresentation());
+		  } else { // status: song not found
 		    status = new DbQueryStatus("Song not found.", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
 		  }
-	      status.setData(returned);
-	      return status;
-		} catch (Exception e) {
+		} catch (Exception e) { // status: something went wrong
 		  status = new DbQueryStatus("Error finding song by id.", DbQueryExecResult.QUERY_ERROR_GENERIC);
-	      status.setData(returned);
-	      return status;
 		}
+        return status;
 	}
 
 	@Override
 	public DbQueryStatus getSongTitleById(String songId) {
-		// TODO Auto-generated method stub
-		return null;
+		DbQueryStatus status = findSongById(songId);
+		if (status.getData() != null) { // song found
+		  status.setData(((Map<?,?>)status.getData()).get("songName"));
+		}
+		return status;
 	}
 
 	@Override

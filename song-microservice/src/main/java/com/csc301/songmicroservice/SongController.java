@@ -62,14 +62,8 @@ public class SongController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("GET %s", Utils.getUrl(request)));
 		
-		try {
-		  Map<String, Object> songResponse = getSongById(songId, request);
-		  Song song = (Song) songResponse.get("data");
-		  response.put("status", "OK");
-		  response.put("data", song.getSongName());
-		} catch (Exception e) {
-		  response.put("status", "Song was not retrieved successfully.");
-		}
+		DbQueryStatus dbQueryStatus = songDal.getSongTitleById(songId);
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 
 		return response;
 	}
