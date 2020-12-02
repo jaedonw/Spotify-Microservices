@@ -94,9 +94,9 @@ public class ProfileDriverImpl implements ProfileDriver {
             invalid = invalid || result.hasNext(); // invalid if the relationship already exists
             
             if (invalid) {
-              status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_ERROR_GENERIC);
+              status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
             } else if (dne) {
-              status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+              status = new DbQueryStatus("One or more users not found.", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
             } else {
               queryStr = String.format("MATCH (user1:profile),(user2:profile) " + 
                   "WHERE user1.userName = '%s' AND user2.userName = '%s' " + 
@@ -106,19 +106,53 @@ public class ProfileDriverImpl implements ProfileDriver {
             }
             trans.success();
           } catch (Exception e) {
-            status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_ERROR_GENERIC);
+            status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
           }
           session.close();
       } catch (Exception e) {
-        status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_ERROR_GENERIC);
+        status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
       }
       return status;
 	}
 
 	@Override
 	public DbQueryStatus unfollowFriend(String userName, String frndUserName) {
-		
-		return null;
+	  String queryStr;
+      DbQueryStatus status = null;
+      boolean invalid = userName.equals(frndUserName); // invalid if a user tries to unfollow themselves
+      try (Session session = ProfileMicroserviceApplication.driver.session()) {
+          try (Transaction trans = session.beginTransaction()) {
+            queryStr = String.format("MATCH (user1:profile {userName:'%s'}), "
+                + "(user2:profile {userName:'%s'}) RETURN user1, user2", userName, frndUserName);
+            StatementResult result = trans.run(queryStr); // check if both users exist
+            boolean dne = !result.hasNext() || result.next().size() != 2; // invalid if both users aren't returned
+            
+            queryStr = String.format("MATCH (user1:profile {userName:'%s'})"
+                + "-[r:follows]->(user2:profile {userName:'%s'}) RETURN r", userName, frndUserName);
+            result = trans.run(queryStr); // does user follow friend?
+            invalid = invalid || !result.hasNext(); // invalid if there is no relationship
+            
+            if (dne) {
+              status = new DbQueryStatus("One or more users not found.", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+            } else if (invalid) {
+              status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
+              
+            } else {
+              queryStr = String.format("MATCH (user1:profile {userName:'%s'})"
+                  + "-[r:follows]->(user2:profile {userName:'%s'}) DELETE r", 
+                  userName, frndUserName);
+              trans.run(queryStr);
+              status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+            }
+            trans.success();
+          } catch (Exception e) {
+            status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
+          }
+          session.close();
+      } catch (Exception e) {
+        status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
+      }
+      return status;
 	}
 
 	@Override
