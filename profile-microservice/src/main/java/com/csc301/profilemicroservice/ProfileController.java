@@ -70,7 +70,10 @@ public class ProfileController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		
-		return null;
+		DbQueryStatus status = profileDriver.followFriend(userName, friendUserName);
+		Utils.setResponseStatus(response, status.getdbQueryExecResult(), status.getData());
+		
+		return response;
 	}
 
 	@RequestMapping(value = "/getAllFriendFavouriteSongTitles/{userName}", method = RequestMethod.GET)
