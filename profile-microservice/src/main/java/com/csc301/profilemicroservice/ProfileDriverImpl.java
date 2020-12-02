@@ -65,11 +65,11 @@ public class ProfileDriverImpl implements ProfileDriver {
               status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
             }
             trans.success();
-          } catch (Exception e) {
+          } catch (Exception e) { // general error catch
             status = new DbQueryStatus("Profile was unable to be created.", DbQueryExecResult.QUERY_ERROR_GENERIC);
           } 
           session.close();
-         } catch (Exception e) {
+         } catch (Exception e) { // general error catch
            status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_ERROR_GENERIC);
          }
       }
@@ -105,11 +105,11 @@ public class ProfileDriverImpl implements ProfileDriver {
               status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
             }
             trans.success();
-          } catch (Exception e) {
+          } catch (Exception e) { // general error catch
             status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
           }
           session.close();
-      } catch (Exception e) {
+      } catch (Exception e) { // general error catch
         status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
       }
       return status;
@@ -144,12 +144,12 @@ public class ProfileDriverImpl implements ProfileDriver {
               trans.run(queryStr);
               status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
             }
-            trans.success();
-          } catch (Exception e) {
+            trans.success(); 
+          } catch (Exception e) { // general error catch
             status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
           }
           session.close();
-      } catch (Exception e) {
+      } catch (Exception e) { // general error catch
         status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
       }
       return status;

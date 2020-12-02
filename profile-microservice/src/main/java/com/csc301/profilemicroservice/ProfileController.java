@@ -106,8 +106,11 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
-
-		return null;
+		
+		DbQueryStatus status = playlistDriver.likeSong(userName, songId);
+        Utils.setResponseStatus(response, status.getdbQueryExecResult(), status.getData());
+		
+		return response;
 	}
 
 	@RequestMapping(value = "/unlikeSong/{userName}/{songId}", method = RequestMethod.PUT)
