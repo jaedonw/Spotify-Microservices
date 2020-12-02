@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
+import com.mongodb.client.result.DeleteResult;
 
 @Repository
 public class SongDalImpl implements SongDal {
@@ -63,8 +64,18 @@ public class SongDalImpl implements SongDal {
 
 	@Override
 	public DbQueryStatus deleteSongById(String songId) {
-		// TODO Auto-generated method stub
-		return null;
+	    DbQueryStatus status;
+	    try {
+	      DeleteResult res = db.remove(new Query(Criteria.where("_id").is(songId)), Song.class);
+	      if (res.getDeletedCount() == 1) {
+	        status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+	      } else {
+	        status = new DbQueryStatus("Song was unable to be deleted", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+	      }
+	    } catch (Exception e) {
+	      status = new DbQueryStatus("Song was unable to be deleted.", DbQueryExecResult.QUERY_ERROR_GENERIC);
+	    }
+		return status;
 	}
 
 	@Override
