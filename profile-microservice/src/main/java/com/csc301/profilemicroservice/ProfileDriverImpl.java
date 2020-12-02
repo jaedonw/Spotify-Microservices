@@ -38,11 +38,41 @@ public class ProfileDriverImpl implements ProfileDriver {
 		}
 	}
 	
-	@Override
-	public DbQueryStatus createUserProfile(String userName, String fullName, String password) {
-		
-		return null;
-	}
+    @Override
+    public DbQueryStatus createUserProfile(String userName, String fullName, String password) {
+      String queryStr;
+      DbQueryStatus status;
+      boolean invalid = userName == null || fullName == null || password == null
+          || userName.length() < 1 || fullName.length() < 1 || password.length() < 1; // checking for valid parameters
+                                                                                      
+      if (invalid) { // invalid parameters -> profile cannot be created
+        status = new DbQueryStatus("Profile was unable to be created.", DbQueryExecResult.QUERY_ERROR_GENERIC);
+      } else {
+        try (Session session = ProfileMicroserviceApplication.driver.session()) {
+          try (Transaction trans = session.beginTransaction()) {
+            // check if profile already exists, if so return an error
+            queryStr = String.format("MATCH (nProfile:profile {userName:'%s'}) RETURN nProfile", userName);
+            StatementResult result = trans.run(queryStr);
+            if (result.hasNext()) {
+              status = new DbQueryStatus("Profile was unable to be created.", DbQueryExecResult.QUERY_ERROR_GENERIC);
+            } else {
+              // create a new profile with username: userName, full name: fullName, password: password
+              // which is related to (created) a playlist with property plName: userName-favorites
+              queryStr = String.format("CREATE (nProfile:profile {userName:'%s', fullName:'%s', "
+                  + "password:'%s'})-[:created]->(nPlaylist:playlist {plName:'%s-favorites'}) RETURN nProfile", 
+                  userName, fullName, password, userName);
+              result = trans.run(queryStr);
+              status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+            }
+            trans.success();
+          } catch (Exception e) {
+            status = new DbQueryStatus("Profile was unable to be created.", DbQueryExecResult.QUERY_ERROR_GENERIC);
+          }
+          session.close();
+        }
+      }
+      return status;
+    }
 
 	@Override
 	public DbQueryStatus followFriend(String userName, String frndUserName) {

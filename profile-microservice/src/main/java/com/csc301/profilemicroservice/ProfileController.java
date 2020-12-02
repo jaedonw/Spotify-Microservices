@@ -52,8 +52,15 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("POST %s", Utils.getUrl(request)));
+		
+		String userName = params.get("userName");
+		String fullName = params.get("fullName");
+		String password = params.get("password");
+		
+		DbQueryStatus status = profileDriver.createUserProfile(userName, fullName, password);
+		Utils.setResponseStatus(response, status.getdbQueryExecResult(), null);
 
-		return null;
+		return response;
 	}
 
 	@RequestMapping(value = "/followFriend/{userName}/{friendUserName}", method = RequestMethod.PUT)
