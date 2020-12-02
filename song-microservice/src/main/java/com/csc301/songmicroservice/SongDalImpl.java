@@ -6,6 +6,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.BasicUpdate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
@@ -80,7 +81,28 @@ public class SongDalImpl implements SongDal {
 
 	@Override
 	public DbQueryStatus updateSongFavouritesCount(String songId, boolean shouldDecrement) {
-		// TODO Auto-generated method stub
-		return null;
+	    DbQueryStatus status = null;
+	    try {
+	      Song song = db.findById(new ObjectId(songId), Song.class, "songs"); // attempt to find it
+	      long favs = song.getSongAmountFavourites(); // get # of favourites
+	      if (shouldDecrement) { // decrease # of song favourites by 1
+	        if (favs > 0) {
+	          song.setSongAmountFavourites(favs-1);
+	          db.save(song);
+	          status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+	        } else { 
+	          status = new DbQueryStatus("Song favourite count is already 0.", DbQueryExecResult.QUERY_ERROR_GENERIC);
+	        }
+	      } else { // increase # of song favourites by 1
+	        song.setSongAmountFavourites(favs+1);
+	        db.save(song);
+	        status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+	      }
+	    } catch (NullPointerException e) {
+	      status = new DbQueryStatus("Song could not be found.", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+	    } catch (Exception e) {
+	      status = new DbQueryStatus("Song favourite count could not be updated.", DbQueryExecResult.QUERY_ERROR_GENERIC);
+	    }
+		return status;
 	}
 }
