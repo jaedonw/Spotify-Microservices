@@ -105,15 +105,33 @@ public class PlaylistDriverImpl implements PlaylistDriver {
   
   @Override
   public DbQueryStatus deleteSongFromDb(String songId) {
+    String queryStr;
+    DbQueryStatus status = null;
 
-    return null;
+    try (Session session = ProfileMicroserviceApplication.driver.session()) {
+        try (Transaction trans = session.beginTransaction()) {
+          if (checkIfSongIdExists(songId)) { // only attempt to delete if songId represents a valid song
+            queryStr = String.format("MATCH (s:song{songId:'%s'}) DETACH DELETE s", songId);
+            trans.run(queryStr);
+            status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+            trans.success();
+          } else { // handle invalid songId 
+            status = new DbQueryStatus("songId not found.", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+          }
+        } catch (Exception e) { // general error catch
+          status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
+        }
+        session.close();
+    } catch (Exception e) { // general error catch
+      status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
+    }
+    return status;
   }
   
   // HELPER FUNCTIONS
   private boolean checkIfSongIdExists(String songId) throws IOException {
       // communicate with SongMicroserviceApplication to check if there exists a song with _id songId in the MongoDB
       OkHttpClient client = new OkHttpClient();
-      Map<String, Object> response = new HashMap<String, Object>();
     
       HttpUrl.Builder urlBuilder = 
       HttpUrl.parse("http://localhost:3001/getSongById/" + songId).newBuilder();
@@ -137,10 +155,8 @@ public class PlaylistDriverImpl implements PlaylistDriver {
   private void updateSongFavouritesCount(String songId, Boolean shouldDecrement) throws IOException {
     // communicate with SongMicroserviceApplication to check if there exists a song with _id songId in the MongoDB
     OkHttpClient client = new OkHttpClient();
-    Map<String, Object> response = new HashMap<String, Object>();
   
-    HttpUrl.Builder urlBuilder = 
-    HttpUrl.parse("http://localhost:3001/updateSongFavouritesCount/" + songId).newBuilder();
+    HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3001/updateSongFavouritesCount/" + songId).newBuilder();
     urlBuilder.addQueryParameter("shouldDecrement", shouldDecrement.toString());
     String url = urlBuilder.build().toString();
     

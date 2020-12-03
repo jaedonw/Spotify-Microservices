@@ -1,5 +1,6 @@
 package com.csc301.songmicroservice;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.bson.Document;
@@ -11,6 +12,11 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 import com.mongodb.client.result.DeleteResult;
+import okhttp3.Call;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 
 @Repository
 public class SongDalImpl implements SongDal {
@@ -67,8 +73,9 @@ public class SongDalImpl implements SongDal {
 	public DbQueryStatus deleteSongById(String songId) {
 	    DbQueryStatus status;
 	    try {
+	      deleteAllSongsFromDb(songId);
 	      DeleteResult res = db.remove(new Query(Criteria.where("_id").is(songId)), Song.class);
-	      if (res.getDeletedCount() == 1) {
+	      if (res.getDeletedCount() == 1) { // songId represented a valid song, and could be deleted
 	        status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
 	      } else {
 	        status = new DbQueryStatus("Song was unable to be deleted", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
@@ -104,5 +111,23 @@ public class SongDalImpl implements SongDal {
 	      status = new DbQueryStatus("Song favourite count could not be updated.", DbQueryExecResult.QUERY_ERROR_GENERIC);
 	    }
 		return status;
+	}
+	
+	// HELPER FUNCTIONS
+	private void deleteAllSongsFromDb(String songId) throws IOException {
+	  OkHttpClient client = new OkHttpClient();
+
+      HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3002/deleteAllSongsFromDb/" + songId).newBuilder();
+      String url = urlBuilder.build().toString();
+
+      RequestBody body = RequestBody.create(null, new byte[0]);
+
+      Request request = new Request.Builder()
+          .url(url)
+          .method("PUT", body)
+          .build();
+
+      Call call = client.newCall(request);
+      call.execute();
 	}
 }
