@@ -171,7 +171,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
     call.execute();
   }
   
-  private boolean checkIfUserExists(String userName) {
+  public static boolean checkIfUserExists(String userName) {
     String queryStr;
     
     try (Session session = ProfileMicroserviceApplication.driver.session()) {

@@ -1,16 +1,22 @@
 package com.csc301.profilemicroservice;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import org.json.JSONObject;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 
 import org.springframework.stereotype.Repository;
+import okhttp3.Call;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.neo4j.driver.v1.Transaction;
 
 @Repository
@@ -157,7 +163,97 @@ public class ProfileDriverImpl implements ProfileDriver {
 
 	@Override
 	public DbQueryStatus getAllSongFriendsLike(String userName) {
-
-      return null;
+	  String queryStr;
+	  Map<String, Object> userToSongs = new HashMap<String, Object>();
+	  DbQueryStatus status = null;
+	  List<Record> usernames;
+	  
+      try (Session session = ProfileMicroserviceApplication.driver.session()) {
+          try (Transaction trans = session.beginTransaction()) {
+              if (PlaylistDriverImpl.checkIfUserExists(userName)) { // ensure userName represents a valid user
+                usernames = getUserFriendUsernames(userName); // get the usernames of all the people user follows
+                for (Record record : usernames) { // iterate over the user's friends' usernames
+                  String friendUserName = record.get(0).asString(); // get the friend's username as a string
+                  String[] friendsSongs = getSongTitlesInUserPlaylist(friendUserName); //get the friend's favourite songs
+                  userToSongs.put(friendUserName, friendsSongs); //map the friend's username to their favourite songs
+                }
+                status = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+                status.setData(userToSongs);
+              } else { // no user with username: userName, return error
+                status = new DbQueryStatus("User not found.", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+              }
+              trans.success();
+          } catch (Exception e) { // general error catch
+            status = new DbQueryStatus("ERROR", DbQueryExecResult.QUERY_ERROR_GENERIC);
+          }
+          session.close();
+      } catch (Exception e) { // general error catch
+        status = new DbQueryStatus("ERROR", DbQueryExecResult.QUERY_ERROR_GENERIC);
+      }
+      return status;
 	}
+	
+	// HELPER FUNCTIONS
+    private List<Record> getUserFriendUsernames(String userName) {
+      String queryStr;
+      List<Record> usernames;
+
+      try (Session session = ProfileMicroserviceApplication.driver.session()) {
+        try (Transaction trans = session.beginTransaction()) {
+          queryStr = String.format("MATCH (:profile{userName:'%s'})-[:follows]->(r:profile) RETURN r.userName", userName);
+          StatementResult result = trans.run(queryStr);
+          usernames = result.list(); 
+          trans.success();
+        }
+        session.close();
+      }
+      
+      return usernames;
+    }  
+    
+    private String[] getSongTitlesInUserPlaylist(String userName) throws IOException {
+      String queryStr;
+      List<String> songTitlesList = new ArrayList<String>();
+      String[] songTitleArr = new String[songTitlesList.size()];
+
+      try (Session session = ProfileMicroserviceApplication.driver.session()) {
+        try (Transaction trans = session.beginTransaction()) {
+          queryStr = String.format("MATCH (:playlist{plName:'%s-favorites'})-[:includes]->(s:song) RETURN s.songId", userName);
+          StatementResult result = trans.run(queryStr);
+          List<Record> songs = result.list(); 
+          
+          for (Record record : songs) { // iterate over the songId's
+            String songId = record.get(0).asString();
+            songTitlesList.add(getSongTitleById(songId));
+          }
+          
+          trans.success();
+        }
+        session.close();
+      }
+      
+      return songTitlesList.toArray(songTitleArr);
+    }
+    
+    private String getSongTitleById(String songId) throws IOException {
+      OkHttpClient client = new OkHttpClient();
+    
+      HttpUrl.Builder urlBuilder = 
+      HttpUrl.parse("http://localhost:3001/getSongTitleById/" + songId).newBuilder();
+      String url = urlBuilder.build().toString();
+      
+      Request request = new Request.Builder()
+          .url(url)
+          .method("GET", null)
+          .build();
+      
+      Call call = client.newCall(request);
+      Response responseFromCall = null;
+
+      String serviceBody = "{}";
+      
+      responseFromCall = call.execute();
+      serviceBody = responseFromCall.body().string();
+      return (String) new JSONObject(serviceBody).get("data");
+    }
 }
