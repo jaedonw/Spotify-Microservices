@@ -53,6 +53,7 @@ public class ProfileController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("POST %s", Utils.getUrl(request)));
 		
+		// retrieve parameters
 		String userName = params.get("userName");
 		String fullName = params.get("fullName");
 		String password = params.get("password");

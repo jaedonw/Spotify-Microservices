@@ -49,7 +49,7 @@ public class ProfileDriverImpl implements ProfileDriver {
       String queryStr;
       DbQueryStatus status;
       boolean invalid = userName == null || fullName == null || password == null
-          || userName.length() < 1 || fullName.length() < 1 || password.length() < 1; // checking for valid parameters
+          || userName.length() < 1 || fullName.length() < 1 || password.length() < 1; // checking for invalid parameters
                                                                                       
       if (invalid) { // invalid parameters -> profile cannot be created
         status = new DbQueryStatus("Profile was unable to be created.", DbQueryExecResult.QUERY_ERROR_GENERIC);
@@ -59,7 +59,7 @@ public class ProfileDriverImpl implements ProfileDriver {
             // check if profile already exists, if so return an error
             queryStr = String.format("MATCH (nProfile:profile {userName:'%s'}) RETURN nProfile", userName);
             StatementResult result = trans.run(queryStr);
-            if (result.hasNext()) {
+            if (result.hasNext()) { // if result contains a record, a profile with same username already exists
               status = new DbQueryStatus("Profile was unable to be created.", DbQueryExecResult.QUERY_ERROR_GENERIC);
             } else {
               // create a new profile with username: userName, full name: fullName, password: password
@@ -86,7 +86,8 @@ public class ProfileDriverImpl implements ProfileDriver {
 	public DbQueryStatus followFriend(String userName, String frndUserName) {
 	  String queryStr;
 	  DbQueryStatus status = null;
-	  boolean invalid = userName.equals(frndUserName); // invalid if a user tries to follow themselves
+	  boolean invalid = userName.equals(frndUserName); // invalid req if a user tries to follow themselves
+	  
       try (Session session = ProfileMicroserviceApplication.driver.session()) {
           try (Transaction trans = session.beginTransaction()) {
             queryStr = String.format("MATCH (user1:profile {userName:'%s'}), "
@@ -99,11 +100,11 @@ public class ProfileDriverImpl implements ProfileDriver {
             result = trans.run(queryStr); // does user already follow friend?
             invalid = invalid || result.hasNext(); // invalid if the relationship already exists
             
-            if (invalid) {
+            if (invalid) { 
               status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
             } else if (dne) {
               status = new DbQueryStatus("One or more users not found.", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
-            } else {
+            } else { // request can go through
               queryStr = String.format("MATCH (user1:profile),(user2:profile) " + 
                   "WHERE user1.userName = '%s' AND user2.userName = '%s' " + 
                   "CREATE (user1)-[:follows]->(user2)", userName, frndUserName);
@@ -126,6 +127,7 @@ public class ProfileDriverImpl implements ProfileDriver {
 	  String queryStr;
       DbQueryStatus status = null;
       boolean invalid = userName.equals(frndUserName); // invalid if a user tries to unfollow themselves
+      
       try (Session session = ProfileMicroserviceApplication.driver.session()) {
           try (Transaction trans = session.beginTransaction()) {
             queryStr = String.format("MATCH (user1:profile {userName:'%s'}), "
@@ -142,8 +144,7 @@ public class ProfileDriverImpl implements ProfileDriver {
               status = new DbQueryStatus("One or more users not found.", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
             } else if (invalid) {
               status = new DbQueryStatus("Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
-              
-            } else {
+            } else { // request can go through
               queryStr = String.format("MATCH (user1:profile {userName:'%s'})"
                   + "-[r:follows]->(user2:profile {userName:'%s'}) DELETE r", 
                   userName, frndUserName);
@@ -163,7 +164,6 @@ public class ProfileDriverImpl implements ProfileDriver {
 
 	@Override
 	public DbQueryStatus getAllSongFriendsLike(String userName) {
-	  String queryStr;
 	  Map<String, Object> userToSongs = new HashMap<String, Object>();
 	  DbQueryStatus status = null;
 	  List<Record> usernames;
@@ -224,7 +224,7 @@ public class ProfileDriverImpl implements ProfileDriver {
           
           for (Record record : songs) { // iterate over the songId's
             String songId = record.get(0).asString();
-            songTitlesList.add(getSongTitleById(songId));
+            songTitlesList.add(getSongTitleById(songId)); // retrieve the songName corresponding to this songId
           }
           
           trans.success();
@@ -236,6 +236,7 @@ public class ProfileDriverImpl implements ProfileDriver {
     }
     
     private String getSongTitleById(String songId) throws IOException {
+      // make a request to SongMicroServiceApplication to get the song title corresponding to songId
       OkHttpClient client = new OkHttpClient();
     
       HttpUrl.Builder urlBuilder = 

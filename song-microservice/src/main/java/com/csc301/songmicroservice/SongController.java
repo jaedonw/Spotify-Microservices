@@ -94,6 +94,7 @@ public class SongController {
           // check that required parameters exist
           if (params.containsKey("songName") && params.containsKey("songArtistFullName") 
               && params.containsKey("songAlbum")) {
+            // retrieve parameters
             String songName = params.get("songName");
             String artistName = params.get("songArtistFullName");
             String albumName = params.get("songAlbum");
@@ -122,8 +123,14 @@ public class SongController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("data", String.format("PUT %s", Utils.getUrl(request)));
 		
-		DbQueryStatus dbQueryStatus = songDal.updateSongFavouritesCount(songId, shouldDecrement.equals("true"));
-		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), null);
+		if (shouldDecrement.equals("true") || shouldDecrement.equals("false")) { // shouldDecrement is either "true" or "false"
+		  // if shouldDecrement is the string "true", then shouldDecrement.equals("true") will return true
+		  // if shouldDecrement is not the string "true", it must be the string "false", and false is returned instead.
+		  DbQueryStatus dbQueryStatus = songDal.updateSongFavouritesCount(songId, shouldDecrement.equals("true")); 
+	      response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), null);
+		} else { // shouldDecrement is not a valid input string
+		  response = Utils.setResponseStatus(response, DbQueryExecResult.QUERY_ERROR_GENERIC, null);
+		}
 
 		return response;
 	}
